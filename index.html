@@ -55,16 +55,6 @@
             color: white;
             border-radius: 5px;
         }
-        #auth {
-            margin: auto;
-            width: 90%;
-            max-width: 300px;
-            text-align: center;
-        }
-        #auth input {
-            width: 100%;
-            margin: 5px 0;
-        }
         @media (max-width: 600px) {
             #input {
                 font-size: 14px; /* Smaller font for mobile */
@@ -81,7 +71,7 @@
     </style>
 </head>
 <body>
-    <div id="auth">
+    <div id="auth" style="display: none;">
         <h2>DarkShell Login</h2>
         <input type="text" id="username" placeholder="Username" required>
         <input type="password" id="password" placeholder="Password" required>
@@ -144,6 +134,24 @@
                 output.style.fontSize = '24px';
             }
         }
+
+        // Predefined username and password
+        const predefinedUsername = "admin";
+        const predefinedPassword = "654321"; // Plaintext password for demo purposes
+
+        // Automatically log in the user with predefined credentials
+        window.onload = async () => {
+            const hashedPassword = await hashString(predefinedPassword);
+            const userData = {
+                username: predefinedUsername,
+                password: hashedPassword
+            };
+            localStorage.setItem(predefinedUsername, JSON.stringify(userData));
+            localStorage.setItem('currentUser', predefinedUsername);
+            document.getElementById('auth').style.display = 'none';
+            document.getElementById('terminal').style.display = 'block';
+            output.textContent += `Welcome, ${predefinedUsername}!\n`;
+        };
 
         function handleKey(event) {
             if (event.key === 'Enter') {
@@ -238,20 +246,6 @@
                 display.value = eval(display.value) || '';
             } catch (e) {
                 display.value = 'Error';
-            }
-        }
-
-        function login() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const storedUser = JSON.parse(localStorage.getItem(username));
-            if (storedUser && storedUser.password === hashString(password)) {
-                localStorage.setItem('currentUser', username);
-                document.getElementById('auth').style.display = 'none';
-                document.getElementById('terminal').style.display = 'block';
-                output.textContent += `Welcome, ${username}!\n`;
-            } else {
-                output.textContent += 'Invalid username or password.\n';
             }
         }
 
