@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkShell Terminal</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        #terminal {
+            padding: 10px;
+            width: 90%;
+            max-width: 800px;
+            margin: auto;
+            border: 1px solid white;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .input-line {
+            display: flex;
+        }
+        .prompt {
+            color: white;
+        }
+        #input {
+            flex-grow: 1;
+            background-color: black;
+            color: white;
+            border: 1px solid white;
+            font-size: 16px;
+            padding: 5px;
+        }
+        #output {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin-top: 10px;
+            height: 300px; /* Fixed height for scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+        #calc {
+            display: none;
+            position: fixed;
+            top: 20%;
+            left: 10%;
+            width: 80%;
+            max-width: 400px;
+            background-color: black;
+            padding: 20px;
+            border: 2px solid white;
+            color: white;
+            border-radius: 5px;
+        }
+        #auth {
+            margin: auto;
+            width: 90%;
+            max-width: 300px;
+            text-align: center;
+        }
+        #auth input {
+            width: 100%;
+            margin: 5px 0;
+        }
+        @media (max-width: 600px) {
+            #input {
+                font-size: 14px; /* Smaller font for mobile */
+            }
+            #output {
+                height: 200px; /* Shorter height for mobile */
+            }
+        }
+        /* Easier interface styles */
+        .easy-interface {
+            font-size: 20px; /* Larger text size */
+            padding: 20px; /* More padding for easier tapping */
+        }
+    </style>
+</head>
+<body>
+    <div id="auth">
+        <h2>DarkShell Login</h2>
+        <input type="text" id="username" placeholder="Username" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button onclick="login()">Login</button>
+        <button onclick="showSignup()">Signup</button>
+    </div>
+
+    <div id="terminal" style="display:none;">
+        <div id="output"></div>
+        <div class="input-line">
+            <span class="prompt">$</span>
+            <input type="text" id="input" autofocus autocomplete="off" onkeypress="handleKey(event)">
+        </div>
+    </div>
+
+    <div id="calc">
+        <h3>Calculator</h3>
+        <input type="text" id="calc-display" readonly>
+        <div>
+            <button onclick="calcInput('1')">1</button>
+            <button onclick="calcInput('2')">2</button>
+            <button onclick="calcInput('3')">3</button>
+            <button onclick="calcInput('+')">+</button>
+            <button onclick="calcInput('C')">C</button>
+        </div>
+        <div>
+            <button onclick="calcInput('4')">4</button>
+            <button onclick="calcInput('5')">5</button>
+            <button onclick="calcInput('6')">6</button>
+            <button onclick="calcInput('-')">-</button>
+        </div>
+        <div>
+            <button onclick="calcInput('7')">7</button>
+            <button onclick="calcInput('8')">8</button>
+            <button onclick="calcInput('9')">9</button>
+            <button onclick="calcInput('*')">*</button>
+        </div>
+        <div>
+            <button onclick="calcInput('0')">0</button>
+            <button onclick="calcInput('=')">=</button>
+            <button onclick="calculate()">Result</button>
+            <button onclick="closeCalc()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let currentDir = "/";
+        const output = document.getElementById('output');
+
+        // Correct hash for the password "654321"
+        const correctHash = "c33367701511b4f6020ec61ded352059"; 
+
+        // Check if the user is on a mobile device
+        if (/Mobi|Android/i.test(navigator.userAgent)) {
+            const useEasyInterface = confirm("Would you like an easier interface for mobile use?");
+            if (useEasyInterface) {
+                document.body.classList.add('easy-interface');
+                document.getElementById('terminal').style.width = '100%';
+                document.getElementById('input').style.fontSize = '24px';
+                output.style.fontSize = '24px';
+            }
+        }
+
+        function handleKey(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('input');
+                const command = input.value.trim();
+                output.textContent += `$ ${command}\n`;
+                processCommand(command);
+                input.value = "";
+                output.scrollTop = output.scrollHeight; // Scroll to the bottom
+            }
+        }
+
+        function processCommand(command) {
+            const args = command.split(" ");
+            switch (args[0]) {
+                case 'cd':
+                    cd(args[1]);
+                    break;
+                case 'mkdir':
+                    mkdir(args[1]);
+                    break;
+                case 'whoami':
+                    output.textContent += getUser() + "\n";
+                    break;
+                case 'calc':
+                    openCalc();
+                    break;
+                case 'generate':
+                    const password = generatePassword(args[1]);
+                    output.textContent += `Generated Password: ${password}\n`;
+                    break;
+                case 'hash':
+                    hashString(args[1]).then(hashResult => {
+                        output.textContent += `Hashed Result: ${hashResult}\n`;
+                    });
+                    break;
+                case 'viper':
+                    viper(args[1], args[3]);
+                    break;
+                default:
+                    output.textContent += `Command not found: ${command}\n`;
+            }
+        }
+
+        function cd(path) {
+            if (path) {
+                currentDir = path;
+                output.textContent += `Changed directory to ${currentDir}\n`;
+            } else {
+                output.textContent += `No directory specified.\n`;
+            }
+        }
+
+        function mkdir(name) {
+            output.textContent += `Directory ${name} created\n`;
+        }
+
+        function getUser() {
+            return localStorage.getItem('currentUser') || "Guest";
+        }
+
+        async function hashString(input) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(input);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function openCalc() {
+            document.getElementById('calc').style.display = 'block';
+        }
+
+        function closeCalc() {
+            document.getElementById('calc').style.display = 'none';
+        }
+
+        function calcInput(value) {
+            const display = document.getElementById('calc-display');
+            if (value === 'C') {
+                display.value = '';
+            } else if (value === '=') {
+                calculate();
+            } else {
+                display.value += value;
+            }
+        }
+
+        function calculate() {
+            const display = document.getElementById('calc-display');
+            try {
+                display.value = eval(display.value) || '';
+            } catch (e) {
+                display.value = 'Error';
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const storedUser = JSON.parse(localStorage.getItem(username));
+            if (storedUser && storedUser.password === hashString(password)) {
+                localStorage.setItem('currentUser', username);
+                document.getElementById('auth').style.display = 'none';
+                document.getElementById('terminal').style.display = 'block';
+                output.textContent += `Welcome, ${username}!\n`;
+            } else {
+                output.textContent += 'Invalid username or password.\n';
+            }
+        }
+
+        function showSignup() {
+            const username = prompt("Enter a username:");
+            const password = prompt("Enter a password:");
+            if (username && password) {
+                hashString(password).then(hashedPassword => {
+                    const userData = {
+                        username: username,
+                        password: hashedPassword
+                    };
+                    localStorage.setItem(username, JSON.stringify(userData));
+                    output.textContent += 'Signup successful! You can now login.\n';
+                });
+            }
+        }
+
+        function viper(mode, hash) {
+            if (mode === '-a' && hash === '127.0.0.1') {
+                const ip = "127.0.0.1";
+                const hashInput = prompt("Enter the hash:");
+                if (hashInput === correctHash) {
+                    alert(`This is the correct password! The password is: 654321`);
+                } else {
+                    output.textContent += `Hash not recognized. Try again.\n`;
+                }
+            } else {
+                output.textContent += `Invalid arguments for Viper.\n`;
+            }
+        }
+
+        function generatePassword(length) {
+            const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let password = "";
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * chars.length);
+                password += chars[randomIndex];
+            }
+            return password;
+        }
+    </script>
+</body>
+</html>
